@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  joomladb:
+    container_name: joomla-mysql
+    image: mysql:8.0
+    restart: always
+    command: '--default-authentication-plugin=mysql_native_password'
+    environment:
+      MYSQL_ROOT_PASSWORD: my_secret_password
+      MYSQL_DATABASE: exampledb
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepassword
+    ports:
+      - '6306:3306'
+    volumes:
+      - ./db_data:/var/lib/mysql
+    healthcheck:    
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+  joomla:
+    container_name: joomla  
+    image: joomla:latest
+    restart: always
+    environment:
+      JOOMLA_DB_NAME: exampledb
+      JOOMLA_DB_USER: exampleuser
+      JOOMLA_DB_PASSWORD: examplepassword
+      JOOMLA_DB_HOST: joomladb
+    ports:
+      - "8085:80"
+    volumes:
+      ["./app_data:/var/www/html"]
+    depends_on:
+      joomladb:
+        condition: service_healthy
+  phpmyadmin:
+    container_name: joomla-pma  
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_PORT: 3306
+      PMA_HOST: joomladb
+    ports:
+      - "8086:80"
+    depends_on:
+      - joomladb
+volumes:
+  db_data:
+  app_data:
